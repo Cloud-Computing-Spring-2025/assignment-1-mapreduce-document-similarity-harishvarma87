@@ -1,172 +1,137 @@
-[![Open in Visual Studio Code](https://classroom.github.com/assets/open-in-vscode-2e0aaae1b6195c2367325f4f02e2d04e9abb55f0b24a779b69b11b9e10269abc.svg)](https://classroom.github.com/online_ide?assignment_repo_id=18028174&assignment_repo_type=AssignmentRepo)
-### **📌 Document Similarity Using Hadoop MapReduce**  
+# Document Similarity using MapReduce
 
-#### **Objective**  
-The goal of this assignment is to compute the **Jaccard Similarity** between pairs of documents using **MapReduce in Hadoop**. You will implement a MapReduce job that:  
-1. Extracts words from multiple text documents.  
-2. Identifies which words appear in multiple documents.  
-3. Computes the **Jaccard Similarity** between document pairs.  
-4. Outputs document pairs with similarity **above 50%**.  
+## Project Overview
 
----
+This project computes the **Jaccard Similarity** between multiple text documents using the **Apache Hadoop MapReduce framework**. The Jaccard Similarity measures the similarity between two sets of words in documents, calculated as:
 
-### **📥 Example Input**  
+\[ Jaccard Similarity (A, B) = |A \cap B| / |A \cup B| \]
 
-You will be given multiple text documents. Each document will contain several words. Your task is to compute the **Jaccard Similarity** between all pairs of documents based on the set of words they contain.  
+The analysis includes:
+- Tokenizing document text and extracting unique words.
+- Computing word intersections and unions for document pairs.
+- Calculating the Jaccard Similarity score for each document pair.
 
-#### **Example Documents**  
+## Approach and Implementation
 
-##### **doc1.txt**  
-```
-hadoop is a distributed system
-```
+### **Mapper (DocumentSimilarityMapper)**
+- Reads input text, where each line represents a document.
+- Extracts the document ID and content.
+- Tokenizes the content into unique lowercase words.
+- Emits (word, document ID) pairs for further processing.
 
-##### **doc2.txt**  
-```
-hadoop is used for big data processing
-```
+### **Reducer (DocumentSimilarityReducer)**
+- Aggregates document IDs for each unique word.
+- Constructs term sets for each document.
+- Computes the Jaccard Similarity between document pairs based on shared terms.
+- Emits (document pair, similarity score).
 
-##### **doc3.txt**  
-```
-big data is important for analysis
-```
+## Execution Steps
 
----
-
-# 📏 Jaccard Similarity Calculator
-
-## Overview
-
-The Jaccard Similarity is a statistic used to gauge the similarity and diversity of sample sets. It is defined as the size of the intersection divided by the size of the union of two sets.
-
-## Formula
-
-The Jaccard Similarity between two sets A and B is calculated as:
-
-```
-Jaccard Similarity = |A ∩ B| / |A ∪ B|
+### 1. **Start the Hadoop Cluster**
+```bash
+docker compose up -d
 ```
 
-Where:
-- `|A ∩ B|` is the number of words common to both documents
-- `|A ∪ B|` is the total number of unique words in both documents
-
-## Example Calculation
-
-Consider two documents:
- 
-**doc1.txt words**: `{hadoop, is, a, distributed, system}`
-**doc2.txt words**: `{hadoop, is, used, for, big, data, processing}`
-
-- Common words: `{hadoop, is}`
-- Total unique words: `{hadoop, is, a, distributed, system, used, for, big, data, processing}`
-
-Jaccard Similarity calculation:
-```
-|A ∩ B| = 2 (common words)
-|A ∪ B| = 10 (total unique words)
-
-Jaccard Similarity = 2/10 = 0.2 or 20%
+### 2. **Build the Code**
+```bash
+mvn install
 ```
 
-## Use Cases
-
-Jaccard Similarity is commonly used in:
-- Document similarity detection
-- Plagiarism checking
-- Recommendation systems
-- Clustering algorithms
-
-## Implementation Notes
-
-When computing similarity for multiple documents:
-- Compare each document pair
-- Output pairs with similarity > 50%
-
-### **📤 Expected Output**  
-
-The output should show the Jaccard Similarity between document pairs in the following format:  
-```
-(doc1, doc2) -> 60%  
-(doc2, doc3) -> 50%  
+### 3. **Move jar files**
+```bash
+mv target/*.jar shared-folder/input/code/
 ```
 
----
-
-### **🛠 Environment Setup: Running Hadoop in Docker**  
-
-Since we are using **Docker Compose** to run a Hadoop cluster, follow these steps to set up your environment.  
-
-#### **Step 1: Install Docker & Docker Compose**  
-- **Windows**: Install **Docker Desktop** and enable WSL 2 backend.  
-- **macOS/Linux**: Install Docker using the official guide: [Docker Installation](https://docs.docker.com/get-docker/)  
-
-#### **Step 2: Start the Hadoop Cluster**  
-Navigate to the project directory where `docker-compose.yml` is located and run:  
-```sh
-docker-compose up -d
-```  
-This will start the Hadoop NameNode, DataNode, and ResourceManager services.  
-
-#### **Step 3: Access the Hadoop Container**  
-Once the cluster is running, enter the **Hadoop master node** container:  
-```sh
-docker exec -it hadoop-master /bin/bash
+### 3. **Copy JAR to Docker Container**
+```bash
+docker cp shared-folder/input/code/DocumentSimilarity-0.0.1-SNAPSHOT.jar resourcemanager:/opt/hadoop-3.2.1/share/hadoop/mapreduce/
 ```
 
----
-
-### **📦 Building and Running the MapReduce Job with Maven**  
-
-#### **Step 1: Build the JAR File**  
-Ensure Maven is installed, then navigate to your project folder and run:  
-```sh
-mvn clean package
-```  
-This will generate a JAR file inside the `target` directory.  
-
-#### **Step 2: Copy the JAR File to the Hadoop Container**  
-Move the compiled JAR into the running Hadoop container:  
-```sh
-docker cp target/similarity.jar hadoop-master:/opt/hadoop-3.2.1/share/hadoop/mapreduce/similarity.jar
+### 4. **Move Dataset to Docker Container**
+```bash
+docker cp shared-folder/input/data/doc.txt res
+ourcemanager:/opt/hadoop-3.2.1/share/hadoop/mapreduce/
 ```
 
----
-
-### **📂 Uploading Data to HDFS**  
-
-#### **Step 1: Create an Input Directory in HDFS**  
-Inside the Hadoop container, create the directory where input files will be stored:  
-```sh
-hdfs dfs -mkdir -p /input
+### 5. **Connect to Docker Container**
+```bash
+docker exec -it resourcemanager /bin/bash
 ```
 
-#### **Step 2: Upload Dataset to HDFS**  
-Copy your local dataset into the Hadoop cluster’s HDFS:  
-```sh
-hdfs dfs -put /path/to/local/input/* /input/
+### 6. **Navigate to the Hadoop directory**
+```bash
+cd /opt/hadoop-3.2.1/share/hadoop/mapreduce/
 ```
 
----
-
-### **🚀 Running the MapReduce Job**  
-
-Run the Hadoop job using the JAR file inside the container:  
-```sh
-hadoop jar similarity.jar DocumentSimilarityDriver /input /output_similarity /output_final
+### 7. **Make the directory**
+```bash
+hadoop fs -mkdir -p /input/dataset
 ```
 
----
-
-### **📊 Retrieving the Output**  
-
-To view the results stored in HDFS:  
-```sh
-hdfs dfs -cat /output_final/part-r-00000
+### 8. **Navigate doc to dataset**
+```bash
+hadoop fs -put ./doc.txt /input/dataset/
 ```
 
-If you want to download the output to your local machine:  
-```sh
-hdfs dfs -get /output_final /path/to/local/output
+### 9. **Execute the MapReduce Job**
+```bash
+hadoop jar /opt/hadoop-3.2.1/share/hadoop/mapreduce/DocumentSimilarity-0.0.1-SNAPSHOT.jar com.example.controller.DocumentSimilarityDriver /input/dataset /output
 ```
----
+
+### 9. **View the Output**
+```bash
+hadoop fs -cat /output/part-r-00000
+```
+
+### 10. **Copy Output from HDFS to Local OS**
+```bash
+hdfs dfs -get /output /opt/hadoop-3.2.1/share/hadoop/mapreduce/
+exit
+docker cp resourcemanager:/opt/hadoop-3.2.1/share
+/hadoop/mapreduce/output/ shared-folder/output/
+```
+
+## Challenges Faced & Solutions
+
+### **1. Challenge: Docker `cp` command failure**
+- **Issue:** `docker cp` command failed if the resourcemanager container was not running.
+- **Solution:** Verified container status using `docker ps` and ensured destination path exists inside the container.
+
+### **2. Challenge: Output file already exists error**
+- **Issue:** Hadoop job failed due to existing output files.
+- **Solution:** Removed output directory before execution:
+  ```bash
+  hadoop fs -rm -r /output
+  ```
+
+### **3. Challenge: HDFS directory or file errors**
+- **Issue:** Errors like "No such file or directory" or "Permission denied" when copying files.
+- **Solution:** Verified HDFS was running using:
+  ```bash
+  hadoop fs -ls /
+  ```
+
+### **4. Challenge: Job execution failures**
+- **Issue:** Job failed due to missing JAR, incorrect class name, or insufficient cluster resources.
+- **Solution:** Ensured JAR file was correctly copied and verified using:
+  ```bash
+  ls /opt/hadoop-3.2.1/share/hadoop/mapreduce/
+  ```
+
+## Sample Output
+
+### **Input Format:**
+```
+doc1    People go to walk everyday 
+doc2    walk is important for many things  
+doc3    walk makes people healthy
+```
+
+### **Expected Output:**
+```
+<doc3, doc2>	 -> 11.11%
+<doc3, doc1>	 -> 28.57%
+<doc2, doc1>	 -> 10.00%
+
+```
+
