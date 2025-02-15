@@ -1,0 +1,3 @@
+doc1    People go to walk everyday 
+doc2    walk is important for many things  
+doc3    walk makes people healthy
